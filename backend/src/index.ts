@@ -46,13 +46,25 @@ app.get('/api/v1/blog/:id', (c) => {
 app.get('/api/v1/blog/bulk' , (c) => {
   return c.text('All the Blog')
 })
+app.post('/api/v1/signin', async (c) => {
+	const prisma = new PrismaClient({
+		datasourceUrl: c.env?.DATABASE_URL	,
+	}).$extends(withAccelerate());
 
-app.post('/api/v1/user/signin' , (c) => {
-  return c.text('Sign up')
-})
+	const body = await c.req.json();
+	const user = await prisma.user.findUnique({
+		where: {
+			email: body.email
+		}
+	});
 
-app.post('/api/v1/user/signin' , (c) => {
-  return c.text('Sign in')
+	if (!user) {
+		c.status(403);
+		return c.json({ error: "user not found" });
+	}
+
+	const jwt = await sign({ id: user.id }, c.env.JWT_SECRET);
+	return c.json({ jwt });
 })
 
 app.post('/api/v1/blog' , (c) => {
